@@ -1,173 +1,118 @@
 <?php
-
 namespace app;
+use app\Database;
 
-class ControllerCarros{
-	public function getAll(){
-       // Lê o conteúdo do ficheiro JSON
-    $json_data = @file_get_contents(_JSON_CARROS);
-    // Converte o JSON em um array associativo PHP
-    $data = json_decode($json_data, true);
-    // Verifica se o ficheiro foi lido corretamente
-    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-            $resp= "Erro ao decodificar o ficheiro JSON: " . json_last_error_msg();
-            echo json_encode(['msg'=>$resp, 'status' => '500']);
-        } else {
-            $data["carros"][0]['status']='200';
-            echo json_encode($data["carros"]);
-        }
 
+class ControllerCarros {
+
+    private $conn;
+
+    public function __construct() {
+        $database = new Database();
+        $this->conn = $database->getConnection();
     }
 
-    public function getById($id){
-        // Lê o conteúdo do ficheiro JSON
-        $json_data = @file_get_contents(_JSON_CARROS);
-        // Converte o JSON em um array associativo PHP
-        $data = json_decode($json_data, true);
-        // Verifica se o ficheiro foi lido corretamente
-        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-            $resp= "Erro ao descodificar o ficheiro JSON: " . json_last_error_msg();
-            echo json_encode(['msg'=>$resp, 'status' => '500']);
-        } else {
-            foreach ($data["carros"] as $item) {
-                if (isset($item['id']) && $item['id'] == $id) {
-                    $item['status']='200';
-                    echo json_encode($item);
-                    return;
-                }
-            }
-            echo json_encode(['msg'=>'O id não existe!', 'status' => '500']);
-        }
-
+//Aqui vai levar o métodos do api
+   
+// Obter todos os carros
+public function getAll() {
+    try {
+        $query = "SELECT * FROM rubenCarros";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $carros = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        echo json_encode($carros);
+    } catch (\PDOException $e) {
+        echo json_encode(['msg' => 'Erro: ' . $e->getMessage(), 'status' => '500']);
     }
-
-    public function create(){
-        // Lê o conteúdo do ficheiro JSON
-        $json_data = @file_get_contents(_JSON_CARROS);
-        // Converte o JSON em um array associativo PHP
-        $data = json_decode($json_data, true);
-        // Verifica se o ficheiro foi lido corretamente
-        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-            $resp= "Erro ao descodificar o ficheiro JSON: " . json_last_error_msg();
-            echo json_encode(['msg'=>$resp, 'status' => '500']);
-        } else {
-            // Verifica se os dados foram enviados via POST
-            if (isset($_POST['id'], $_POST['Marca'], $_POST['Detalhes'], $_POST['Foto'])) {
-                // Cria o novo carro com base nos dados recebidos via POST
-                $novoCarro = ["id" => $_POST['id'],"Marca" => $_POST['Marca'],
-                    "Detalhes" => $_POST['Detalhes'],"Foto" => $_POST['Foto']];  
-                // Adiciona o novo carro ao array de "carros"
-                $data['carros'][] = $novoCarro;
-                // Codifica o array novamente para JSON
-                $novoJsonContent = json_encode($data, JSON_PRETTY_PRINT);
-     		    // Escreve os dados atualizados de volta no ficheiro
-                if (file_put_contents(_JSON_CARROS, $novoJsonContent)) {
-                  echo json_encode(['msg'=>'Carro adicionado com sucesso.','status'=>'200']);
-                    return;
-                } else {
-                  echo json_encode(['msg'=>'Erro ao escrever no ficheiro.','status'=>'500']);
-                    return;
-                }
-            } else {
-                echo json_encode(['msg'=>"Erro: Dados incompletos. Certifique-se de que os campos 'id', 'Marca', 'Detalhes' e 'Foto' estão presentes.", 'status' => '500']);
-            }
-        }
-
-    }
-
-    public function update(){
-        // Lê o conteúdo do ficheiro JSON
-        $json_data = @file_get_contents(_JSON_CARROS);
-        // Converte o JSON em um array associativo PHP
-        $data = json_decode($json_data, true);
-        // Verifica se o ficheiro foi lido corretamente
-        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-            $resp= "Erro ao descodificar o ficheiro JSON: " . json_last_error_msg();
-            echo json_encode(['msg'=>$resp, 'status' => '500']);
-        } else {
-            // Verifica se os dados foram enviados via POST
-            // Captura os dados da requisição PUT
-            $inputData = file_get_contents("php://input");
-            parse_str($inputData, $putData);
-            if (isset($putData['id'], $putData['Marca'], $putData['Detalhes'], $putData['Foto'])){
-                // Cria o novo carro com base nos dados recebidos via POST
-                $id=$putData['id'];
-                $carroAtualizado  = ["id" => $putData['id'],"Marca" => $putData['Marca'],
-                    "Detalhes" => $putData['Detalhes'],"Foto" => $putData['Foto']];  
-                // Procura o carro pelo ID
-                $carroEncontrado = false;
-                foreach ($data['carros'] as &$carro) {
-                    if ($carro['id'] == $id) {
-                        // Atualiza os detalhes do carro
-                        $carro = $carroAtualizado;
-                        $carroEncontrado = true;
-                        break;
-                    }
-                }
-                if ($carroEncontrado) {
-                    // Codifica o array novamente para JSON
-                    $novoJsonContent = json_encode($data, JSON_PRETTY_PRINT);      
-                    // Escreve os dados atualizados de volta no ficheiro
-                    if (file_put_contents(_JSON_CARROS, $novoJsonContent)) {
-                      echo json_encode(['msg'=>'Carro atualizado com sucesso.','status'=>'200']);
-                        return;
-                    } else {
-                      echo json_encode(['msg'=>'Erro ao escrever no ficheiro.','status'=>'500']);
-                        return;
-                    }
-                } else {
-                    echo json_encode(['msg'=>"Erro: Carro com o ID $id não encontrado.", 'status' => '500']);
-                    return;
-                }
-            } else {
-                echo json_encode(['msg'=>"Erro: Dados incompletos. Certifique-se de que os campos 'id', 'Marca', 'Detalhes' e 'Foto' estão presentes.", 'status' => '500']);
-            }
-        }
-
-    }
-    public function delete($id){
-        // Lê o conteúdo do ficheiro JSON
-        $json_data = @file_get_contents(_JSON_CARROS);
-        // Converte o JSON em um array associativo PHP
-        $data = json_decode($json_data, true);
-             // Verifica se o ficheiro foi lido corretamente
-             if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-                 $resp= "Erro ao decodificar o ficheiro JSON: " . json_last_error_msg();
-                 echo json_encode(['msg'=>$resp, 'status' => '500']);
-             } else {
-                 $carroEncontrado = false;
-                 foreach ($data['carros'] as $key => $carro) {
-                     if ($carro['id'] == $id) {
-                        // Atualiza os detalhes do carro
-                        unset($data['carros'][$key]);
-                        $carroEncontrado = true;
-                        break;
-                      }
-                  }
-                  if ($carroEncontrado) {
-                    $data['carros'] = array_values($data['carros']);
-                    // Codifica o array novamente para JSON
-                    $novoJsonContent = json_encode($data, JSON_PRETTY_PRINT);
-                    // Escreve os dados atualizados de volta no ficheiro
-                    if (file_put_contents(_JSON_CARROS, $novoJsonContent)) {
-                       echo json_encode(['msg'=>'Carro apagado com sucesso.','status'=>'200']);
-                       return;
-                     } else {
-                    echo json_encode(['msg'=>'Erro ao escrever no ficheiro.','status'=>'500']);
-                             return;
-                     }
-                   } else {
-                     echo json_encode(['msg'=>"Erro: Carro com o ID $id não encontrado.", 'status' => '500']);
-                         return;
-                     }
-                 //} else {
-                 //  echo json_encode(['msg'=>"Erro: Dados incompletos. Certifique-se de que os campos 'id', 'Marca', 'Detalhes' e 'Foto' estão presentes.", 'status' => '500']);
-                 //}
-             }
-             //echo json_encode(['msg'=>'Apaga o carrinho com o ID:' . $id]);
-         }
-     
-	
 }
+
+ // Obter carro por ID
+ public function getById($id) {
+    try {
+        $query = "SELECT * FROM rubenCarros WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
+        $stmt->execute();
+        $carro = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if ($carro) {
+            echo json_encode($carro);
+        } else {
+            echo json_encode(['msg' => 'Carro não encontrado', 'status' => '404']);
+        }
+    } catch (\PDOException $e) {
+        echo json_encode(['msg' => 'Erro: ' . $e->getMessage(), 'status' => '500']);
+    }
+}
+
+
+// Criar um novo carro
+public function create() {
+    try {
+        $query = "INSERT INTO rubenCarros (marca, detalhes, foto) VALUES (:marca, :detalhes, :foto)";
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(':marca', $_POST['Marca']);
+        $stmt->bindParam(':detalhes', $_POST['Detalhes']);
+        $stmt->bindParam(':foto', $_POST['Foto']);
+
+        //print_r($_POST);
+        if ($stmt->execute()) {
+            echo json_encode(['msg' => 'Carro adicionado com sucesso.', 'status' => '200', 'Marca' => $_POST['Marca']]);
+        } else {
+            echo json_encode(['msg' => 'Erro ao adicionar o carro.', 'status' => '500']);
+        }
+    } catch (\PDOException $e) {
+        echo json_encode(['msg' => 'Erro: ' . $e->getMessage(), 'status' => '500']);
+    }
+}
+
+
+// Atualizar um carro
+public function update() {
+    try {
+        parse_str(file_get_contents("php://input"), $putData);
+
+        $query = "UPDATE rubenCarros SET marca = :marca, detalhes = :detalhes, foto = :foto WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(':id', $putData['id']);
+        $stmt->bindParam(':marca', $putData['Marca']);
+        $stmt->bindParam(':detalhes', $putData['Detalhes']);
+        $stmt->bindParam(':foto', $putData['Foto']);
+
+        if ($stmt->execute()) {
+            echo json_encode(['msg' => 'Carro atualizado com sucesso.', 'status' => '200', 'Marca' => $putData['Marca']]);
+        } else {
+            echo json_encode(['msg' => 'Erro ao atualizar o carro.', 'status' => '500']);
+        }
+    } catch (\PDOException $e) {
+        echo json_encode(['msg' => 'Erro: ' . $e->getMessage(), 'status' => '500']);
+    }
+}
+
+
+// Deletar um carro
+public function delete($id) {
+    try {
+        $query = "DELETE FROM rubenCarros WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
+
+        if ($stmt->execute()) {
+            echo json_encode(['msg' => 'Carro deletado com sucesso.', 'status' => '200']);
+        } else {
+            echo json_encode(['msg' => 'Erro ao deletar o carro.', 'status' => '500']);
+        }
+    } catch (\PDOException $e) {
+        echo json_encode(['msg' => 'Erro: ' . $e->getMessage(), 'status' => '500']);
+    }
+}
+
+
+}
+
+
 
 ?>

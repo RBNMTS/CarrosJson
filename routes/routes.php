@@ -12,6 +12,8 @@ Route::get('/erros/404', function(){require _CAMINHO_ERROS. "erro404.php";});
 
 Route::get('/admin/json', function(){require _CAMINHO_TEMPLATE. "tabelaCarros.html";});
 
+Route::get('/admin/carros', function(){require _CAMINHO_TEMPLATE. "tabelaCarros.html";});
+
 
 //Carros
 Route::get(['set' => '/api/carros', 'as' => 'carros.getAll'], 'ControllerCarros@getAll');

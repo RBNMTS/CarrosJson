@@ -3,9 +3,9 @@
 define("_URL", 'https://turma12r.alunos.esmonserrate.org/ruben/Carros/public');
 
 define("_SERVER", 'localhost');
-define("_BDUSER", 'USERNAME');
-define("_BDPASS", 'PASSWORD');
-define("_BD", 'DBNAME');
+define("_BDUSER", 'turma12r');
+define("_BDPASS", 'ASaQakcXbf9Wh7');
+define("_BD", 'turma12r');
 
 define("_JSON_CARROS", '../json/dados.json');
 
